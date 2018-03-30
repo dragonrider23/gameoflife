@@ -1,7 +1,7 @@
 /**
  * Conway's Game of Life
  *
- * Author: Lee Keitel (dragonrider23)
+ * Author: Lee Keitel
  * License: MIT
  */
 
@@ -19,6 +19,7 @@ var GameSettings =
 // Main game logic
 var Game =
 {
+    nextState: [],
     currentState: [],
     lastState: [],
     cellCount: 0,
@@ -27,13 +28,33 @@ var Game =
     generation: 0,
     ctx: null,
     canvas: null,
-    timer: null,
     paused: true,
     stalled: false,
+    visualize: true,
 
     init: function() {
-        clearInterval(Game.timer);
+        const settingsHeight = document.getElementById('settings-height')
+        const settingsWidth = document.getElementById('settings-width')
+        const settingsCellSize = document.getElementById('settings-cell-size')
+
+        GameSettings.height = parseInt(settingsHeight.value);
+        GameSettings.width = parseInt(settingsWidth.value);
+        GameSettings.cellSize = parseInt(settingsCellSize.value);
+
+        settingsHeight.addEventListener('input', function() {
+            document.getElementById('settings-height-val').innerHTML = settingsHeight.value;
+        });
+        settingsWidth.addEventListener('input', function() {
+            document.getElementById('settings-width-val').innerHTML = settingsWidth.value;
+        });
+        settingsCellSize.addEventListener('input', function() {
+            document.getElementById('settings-cell-size-val').innerHTML = settingsCellSize.value;
+        });
+
         Game.canvas = document.getElementById('game-grid');
+        Game.canvas.height = GameSettings.height;
+        Game.canvas.width = GameSettings.width;
+
         Game.canvas.addEventListener('mousedown', Game.markGrid, false);
         Game.canvas.addEventListener('mousemove', Game.getMouse, false);
         Game.ctx = Game.canvas.getContext('2d');
@@ -42,16 +63,43 @@ var Game =
         Game.cellsPerColumn = GameSettings.height / GameSettings.cellSize;
         Game.cellCount = Game.cellsPerRow * Game.cellsPerColumn;
 
-        Game.currentState = Game.blankGrid();
-        Game.lastState = Game.blankGrid();
+        Game.reset();
+    },
+
+    reset: function() {
+        Game.nextState = Game.newBlankGrid();
+        Game.currentState = Game.newBlankGrid();
+        Game.lastState = Game.newBlankGrid();
         Game.stalled = false;
         Game.paused = true;
         Game.generation = 0;
-        Game.timer = null;
+        Game.randomize();
 
-        Game.drawGrid();
         Game.setMessage('Ready to start...');
         document.getElementById('generation-count').innerHTML = Game.generation;
+    },
+
+    randomize: function() {
+        for (var i = 0; i < Game.cellsPerRow; i++) {
+            for (var j = 0; j < Game.cellsPerColumn; j++) {
+                Game.currentState[i][j] = (Math.random() < 0.3) ? 1 : 0;
+            }
+        }
+
+        const oldVisualize = Game.visualize;
+        Game.visualize = true;
+        Game.drawGrid();
+        Game.visualize = oldVisualize;
+    },
+
+    clear: function() {
+        for (var i = 0; i < Game.cellsPerRow; i++) {
+            for (var j = 0; j < Game.cellsPerColumn; j++) {
+                Game.currentState[i][j] = 0;
+            }
+        }
+
+        Game.drawGrid(true);
     },
 
     getMouse: function(event) {
@@ -70,6 +118,11 @@ var Game =
         } else if (typeof(setting) == 'boolean') {
             GameSettings.pauseOnStall = setting;
         }
+    },
+
+    setNoVisuals: function() {
+        const val = document.getElementById('no-visual').checked
+        Game.visualize = !val;
     },
 
     showState: function() {
@@ -111,30 +164,19 @@ var Game =
             }
             Game.setMessage('Ready to start...');
         }
-        Game.drawGrid();
+        Game.generation = 0;
+        document.getElementById('generation-count').innerHTML = Game.generation;
+        Game.drawGrid(true);
     },
 
     markGrid: function(event, onlyAlive) {
-        if (!Game.paused) {
+        if (!Game.paused || event.buttons === 0) {
             return;
         }
         if (typeof(onlyAlive) == 'undefined') { onlyAlive = false; }
 
-        var x = new Number();
-        var y = new Number();
-
-        if (event.x != undefined && event.y != undefined) {
-          x = event.x;
-          y = event.y;
-        } else { // Firefox method to get the position
-            x = event.clientX + document.body.scrollLeft +
-                document.documentElement.scrollLeft;
-            y = event.clientY + document.body.scrollTop +
-                document.documentElement.scrollTop;
-        }
-
-        x -= Game.canvas.offsetLeft;
-        y -= Game.canvas.offsetTop;
+        var x = event.layerX;
+        var y = event.layerY;
 
         var cellX = (x - (x % GameSettings.cellSize)) / GameSettings.cellSize;
         var cellY = (y - (y % GameSettings.cellSize)) / GameSettings.cellSize;
@@ -149,26 +191,45 @@ var Game =
     },
 
     play: function(delta) {
-        clearInterval(Game.timer);
-        Game.timer = setInterval(Game.nextGeneration, (100/delta));
-        Game.paused = false;
-        Game.setMessage('Simulation running');
+        if (!Game.paused) { return; }
+
+        if (Game.visualize) {
+            var frameCount = 0;
+            var animationFunc = function() {
+                if (frameCount % delta === 0) {
+                    Game.nextGeneration();
+                }
+
+                if (!Game.paused) {
+                    requestAnimationFrame(animationFunc);
+                }
+                frameCount++;
+            };
+
+            requestAnimationFrame(animationFunc);
+            Game.paused = false;
+            Game.setMessage('Simulation running');
+        } else {
+            Game.paused = false;
+            Game.setMessage('Simulation running');
+            console.log(JSON.stringify(Game.currentState));
+            while (!Game.stalled) {
+                console.log(Game.generation);
+                Game.nextGeneration();
+            }
+        }
     },
 
     pause: function() {
-        clearInterval(Game.timer);
         Game.paused = true;
         Game.setMessage('Simulation paused');
     },
 
-    blankGrid: function() {
-        var grid = [];
+    newBlankGrid: function() {
+        var grid = new Array(Game.cellsPerRow);
         for (var i = 0; i < Game.cellsPerRow; i++) {
-            var row = [];
-            for (var j = 0; j < Game.cellsPerColumn; j++) {
-                row[j] = 0;
-            }
-            grid.push(row);
+            grid[i] = new Array(Game.cellsPerColumn);
+            grid[i].fill(0);
         }
         return grid;
     },
@@ -179,7 +240,6 @@ var Game =
     },
 
     nextGeneration: function() {
-        var nextGen = Game.blankGrid();
         var stalled = true;
 
         for (var i = 0; i < Game.cellsPerRow; i++) {
@@ -187,23 +247,24 @@ var Game =
                 var neighbors = Game.getNeighborCount(i, j);
 
                 if (neighbors < 2) {
-                    nextGen[i][j] = 0;
-                } else if ((neighbors == 2 || neighbors == 3) && Game.currentState[i][j] === 1) {
-                    nextGen[i][j] = 1;
+                    Game.nextState[i][j] = 0;
+                } else if ((neighbors === 2 || neighbors === 3) && Game.currentState[i][j] === 1) {
+                    Game.nextState[i][j] = 1;
                 } else if (neighbors > 3) {
-                    nextGen[i][j] = 0;
-                } else if (neighbors == 3 && Game.currentState[i][j] === 0) {
-                    nextGen[i][j] = 1;
+                    Game.nextState[i][j] = 0;
+                } else if (neighbors === 3 && Game.currentState[i][j] === 0) {
+                    Game.nextState[i][j] = 1;
+                } else {
+                    Game.nextState[i][j] = 0;
                 }
 
-                if (nextGen[i][j] != Game.lastState[i][j]) {
+                if (Game.nextState[i][j] !== Game.lastState[i][j]) {
                     stalled = false;
                 }
             }
         }
 
-        Game.lastState = Game.currentState.slice();
-        Game.currentState = nextGen;
+        Game.rotateGrids();
         Game.generation++;
         document.getElementById('generation-count').innerHTML = Game.generation;
         Game.drawGrid();
@@ -217,7 +278,15 @@ var Game =
         }
     },
 
-    drawGrid: function() {
+    rotateGrids: function() {
+        var last = Game.lastState;
+        Game.lastState = Game.currentState;
+        Game.currentState = Game.nextState;
+        Game.nextState = last;
+    },
+
+    drawGrid: function(force) {
+        if (!Game.visualize && !force) { return; }
         Game.ctx.clearRect(0, 0, GameSettings.width, GameSettings.height);
 
         for (var i = 0; i < (Game.cellsPerColumn); i++) {
@@ -286,6 +355,4 @@ var Game =
     }
 };
 
-(function() {
-    Game.init();
-})();
+Game.init();

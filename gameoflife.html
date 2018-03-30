@@ -1,24 +1,44 @@
+<!DOCTYPE html>
 <html>
     <head>
+        <meta charset="UTF-8">
         <title>Conway's Game of Life</title>
     </head>
     <body>
-        <canvas id="game-grid" height="600" width="900"></canvas>
+        <canvas id="game-grid"></canvas>
 
-        <br><br><div>
-            Messages: <span id="messages">Paused</span>
-            <br>Generation: <span id="generation-count">0</span>
+        <br><br>
+        <div>
+            <b>Status:</b> <span id="messages">Paused</span>
+            <br><b>Generation:</b> <span id="generation-count">0</span>
         </div>
 
-        <br><div id="controls">
-            <button type="button" onClick="Game.play(1);">Play</button>
-            <button type="button" onClick="Game.play(2);">Play Fast</button>
-            <button type="button" onClick="Game.play(5);">Play Really Fast</button>
-            <button type="button" onClick="Game.play(10);">Play Ludicrous Speed</button>
+        <br>
+        <div>
+            Height: <input type="range" min="400" max="1200" step="100" value="600" id="settings-height">
+            <span id="settings-height-val">600</span>
+            <br><br>
+            Width: <input type="range" min="400" max="1800" step="100" value="900" id="settings-width">
+            <span id="settings-width-val">900</span>
+            <br><br>
+            Cell Size: <input type="range" min="5" max="20" step="1" value="12" id="settings-cell-size">
+            <span id="settings-cell-size-val">12</span>
+
+            <button type="button" onClick="Game.init();">Init</button>
+        </div>
+
+        <br>
+        <div id="controls">
+            <button type="button" onClick="Game.play(7);">Play</button>
+            <button type="button" onClick="Game.play(5);">Play Fast</button>
+            <button type="button" onClick="Game.play(3);">Play Really Fast</button>
+            <button type="button" onClick="Game.play(1);">Play Ludicrous Speed</button>
             <button type="button" onClick="Game.nextOneStep();">One Step</button>
             <button type="button" onClick="Game.pause();">Pause</button>
-            <button type="button" onClick="Game.init();">Reset</button>
+            <button type="button" onClick="Game.reset();">Reset</button>
+            <button type="button" onClick="Game.clear();">Clear</button>
             <input type="checkbox" id="pause-stall" onClick="Game.setPauseOnStall();"> Pause on life stall
+            <input type="checkbox" id="no-visual" onClick="Game.setNoVisuals();"> No visuals
 
             <br><br><button type="button" onClick="Game.showState(false);">Show Current State JSON</button>
             <button type="button" onClick="Game.loadInitState(false);">Load State From JSON</button>
