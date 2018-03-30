@@ -10,9 +10,9 @@
 // Change these settings to suit the simulation
 var GameSettings =
 {
-    height: 600,
-    width: 900,
-    cellSize: 12,
+    height: 500,
+    width: 500,
+    cellSize: 10,
     pauseOnStall: false
 }
 
@@ -25,7 +25,7 @@ var Game =
     cellCount: 0,
     cellsPerRow: 0,
     cellsPerColumn: 0,
-    generation: 0,
+    generation: 1,
     ctx: null,
     canvas: null,
     paused: true,
@@ -72,7 +72,7 @@ var Game =
         Game.lastState = Game.newBlankGrid();
         Game.stalled = false;
         Game.paused = true;
-        Game.generation = 0;
+        Game.generation = 1;
         Game.randomize();
 
         Game.setMessage('Ready to start...');
@@ -164,7 +164,8 @@ var Game =
             }
             Game.setMessage('Ready to start...');
         }
-        Game.generation = 0;
+        Game.generation = 1;
+        Game.stalled = false;
         document.getElementById('generation-count').innerHTML = Game.generation;
         Game.drawGrid(true);
     },
@@ -291,10 +292,10 @@ var Game =
 
         for (var i = 0; i < (Game.cellsPerColumn); i++) {
             for (var j = 0; j < (Game.cellsPerRow); j++) {
-                if (Game.currentState[j][i] === 1) {
-                    Game.ctx.fillRect(j*GameSettings.cellSize, i*GameSettings.cellSize, GameSettings.cellSize, GameSettings.cellSize);
+                if (Game.currentState[i][j] === 1) {
+                    Game.ctx.fillRect(i*GameSettings.cellSize, j*GameSettings.cellSize, GameSettings.cellSize, GameSettings.cellSize);
                 } else {
-                    Game.ctx.strokeRect(j*GameSettings.cellSize, i*GameSettings.cellSize, GameSettings.cellSize, GameSettings.cellSize);
+                    Game.ctx.strokeRect(i*GameSettings.cellSize, j*GameSettings.cellSize, GameSettings.cellSize, GameSettings.cellSize);
                 }
             }
         }
